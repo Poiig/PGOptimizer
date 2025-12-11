@@ -64,8 +64,7 @@
           <h2>生成的配置参数</h2>
           <div class="action-buttons">
             <button @click="copyToClipboard" class="btn-secondary" id="copyBtn">复制配置</button>
-            <button @click="copyAlterSystemSQL" class="btn-secondary" id="copySQLBtn">复制 ALTER SYSTEM SQL</button>
-            <button @click="downloadConfig" class="btn-secondary" id="downloadBtn">下载配置文件</button>
+            <button @click="showAlterSystemSQL" class="btn-secondary" id="copySQLBtn">生成并预览 ALTER SYSTEM SQL</button>
           </div>
         </div>
         <div class="params-container">
@@ -152,6 +151,22 @@
         </div>
       </div>
     </div>
+
+    <!-- ALTER SYSTEM SQL 预览弹窗 -->
+    <div v-if="sqlModal.visible" class="modal-overlay" @click="closeSQLModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>ALTER SYSTEM SQL 语句</h3>
+          <button class="modal-close" @click="closeSQLModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="sql-actions">
+            <button @click="copySQLFromModal" class="btn-copy-sql">复制 SQL</button>
+          </div>
+          <pre class="sql-preview">{{ sqlModal.sqlText }}</pre>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -205,19 +220,23 @@ export default {
     })
     let tooltipTimeout = null
     
+    // SQL 弹窗状态
+    const sqlModal = reactive({
+      visible: false,
+      sqlText: ''
+    })
+    
     // 存储按钮的原始文本
     const buttonOriginalTexts = {
       copyBtn: '复制配置',
-      copySQLBtn: '复制 ALTER SYSTEM SQL',
-      downloadBtn: '下载配置文件'
+      copySQLBtn: '生成并预览 ALTER SYSTEM SQL'
     }
     
     // 重置所有按钮到原始状态
     const resetAllButtons = () => {
       const buttons = [
         document.getElementById('copyBtn'),
-        document.getElementById('copySQLBtn'),
-        document.getElementById('downloadBtn')
+        document.getElementById('copySQLBtn')
       ]
       
       buttons.forEach(btn => {
@@ -227,8 +246,6 @@ export default {
             btn.textContent = buttonOriginalTexts.copyBtn
           } else if (btn.id === 'copySQLBtn') {
             btn.textContent = buttonOriginalTexts.copySQLBtn
-          } else if (btn.id === 'downloadBtn') {
-            btn.textContent = buttonOriginalTexts.downloadBtn
           }
           // 恢复原始样式
           btn.style.background = ''
@@ -348,10 +365,10 @@ export default {
       })
     }
 
-    const copyAlterSystemSQL = (event) => {
+    // 生成 ALTER SYSTEM SQL 文本
+    const generateAlterSystemSQL = () => {
       if (!generatedParams.value || generatedParams.value.length === 0) {
-        alert('没有可复制的配置参数，请先生成配置')
-        return
+        return ''
       }
       
       // 生成 ALTER SYSTEM SET 的 SQL 语句
@@ -395,20 +412,42 @@ export default {
         }
       })
 
-      const sqlText = sqlStatements.join('\n')
+      return sqlStatements.join('\n')
+    }
+
+    // 显示 ALTER SYSTEM SQL 弹窗
+    const showAlterSystemSQL = () => {
+      if (!generatedParams.value || generatedParams.value.length === 0) {
+        alert('没有可生成的配置参数，请先生成配置')
+        return
+      }
       
-      // 先重置所有按钮
-      resetAllButtons()
+      const sqlText = generateAlterSystemSQL()
+      sqlModal.sqlText = sqlText
+      sqlModal.visible = true
+    }
+
+    // 关闭 SQL 弹窗
+    const closeSQLModal = () => {
+      sqlModal.visible = false
+      sqlModal.sqlText = ''
+    }
+
+    // 从弹窗复制 SQL
+    const copySQLFromModal = () => {
+      if (!sqlModal.sqlText) {
+        return
+      }
       
-      const btn = event?.currentTarget || event?.target || document.getElementById('copySQLBtn')
-      
-      navigator.clipboard.writeText(sqlText).then(() => {
+      navigator.clipboard.writeText(sqlModal.sqlText).then(() => {
+        const btn = document.querySelector('.btn-copy-sql')
         if (btn) {
+          const originalText = btn.textContent
           btn.textContent = '已复制！'
           btn.style.background = '#28a745'
           btn.style.color = 'white'
           setTimeout(() => {
-            btn.textContent = buttonOriginalTexts.copySQLBtn
+            btn.textContent = originalText
             btn.style.background = ''
             btn.style.color = ''
           }, 2000)
@@ -417,69 +456,8 @@ export default {
         }
       }).catch(err => {
         console.error('复制失败:', err)
-        if (btn) {
-          btn.style.background = '#dc3545'
-          btn.style.color = 'white'
-          setTimeout(() => {
-            btn.textContent = buttonOriginalTexts.copySQLBtn
-            btn.style.background = ''
-            btn.style.color = ''
-          }, 2000)
-        }
         alert('复制失败，请手动复制')
       })
-    }
-
-    const downloadConfig = (event) => {
-      if (!generatedParams.value || generatedParams.value.length === 0) {
-        alert('没有可下载的配置参数，请先生成配置')
-        return
-      }
-      
-      // 先重置所有按钮
-      resetAllButtons()
-      
-      const configText = generatedParams.value
-        .map(param => `${param.name} = ${param.value}`)
-        .join('\n')
-      
-      try {
-        const blob = new Blob([configText], { type: 'text/plain' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `postgresql-${config.dbVersion}-optimized.conf`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-        
-        // 添加成功提示
-        const btn = event?.currentTarget || event?.target || document.getElementById('downloadBtn')
-        if (btn) {
-          btn.textContent = '已下载！'
-          btn.style.background = '#28a745'
-          btn.style.color = 'white'
-          setTimeout(() => {
-            btn.textContent = buttonOriginalTexts.downloadBtn
-            btn.style.background = ''
-            btn.style.color = ''
-          }, 2000)
-        }
-      } catch (err) {
-        console.error('下载失败:', err)
-        const btn = event?.currentTarget || event?.target || document.getElementById('downloadBtn')
-        if (btn) {
-          btn.style.background = '#dc3545'
-          btn.style.color = 'white'
-          setTimeout(() => {
-            btn.textContent = buttonOriginalTexts.downloadBtn
-            btn.style.background = ''
-            btn.style.color = ''
-          }, 2000)
-        }
-        alert('下载失败，请重试')
-      }
     }
 
     // 初始化时生成一次配置
@@ -494,8 +472,10 @@ export default {
       updateParam,
       updateParamByCategory,
       copyToClipboard,
-      copyAlterSystemSQL,
-      downloadConfig,
+      showAlterSystemSQL,
+      closeSQLModal,
+      copySQLFromModal,
+      sqlModal,
       getParamDescription,
       getParamDocUrl,
       isRestartRequired,
@@ -901,9 +881,163 @@ export default {
   text-decoration: underline;
 }
 
+/* SQL 预览弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.sql-actions {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-copy-sql {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-copy-sql:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-copy-sql:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sql-preview {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #212529;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.sql-preview::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.sql-preview::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.sql-preview::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.sql-preview::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 @media (max-width: 768px) {
   .form-row {
     grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+    margin: 10px;
+  }
+  
+  .modal-header {
+    padding: 16px 20px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .sql-preview {
+    font-size: 0.8rem;
+    padding: 16px;
   }
 }
 </style>
