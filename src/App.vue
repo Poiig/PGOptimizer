@@ -403,21 +403,63 @@ export default {
       
       const btn = event?.currentTarget || event?.target || document.getElementById('copyBtn')
       
-      navigator.clipboard.writeText(configText).then(() => {
-        // 使用更友好的提示方式
-        if (btn) {
-          btn.textContent = t('copied')
-          btn.style.background = '#28a745'
-          btn.style.color = 'white'
-          setTimeout(() => {
-            btn.textContent = buttonOriginalTexts.value.copyBtn
-            btn.style.background = ''
-            btn.style.color = ''
-          }, 2000)
+      // 检查是否支持 Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(configText).then(() => {
+          // 使用更友好的提示方式
+          if (btn) {
+            btn.textContent = t('copied')
+            btn.style.background = '#28a745'
+            btn.style.color = 'white'
+            setTimeout(() => {
+              btn.textContent = buttonOriginalTexts.value.copyBtn
+              btn.style.background = ''
+              btn.style.color = ''
+            }, 2000)
+          } else {
+            alert(t('copied'))
+          }
+        }).catch(err => {
+          console.error('复制失败:', err)
+          // 如果 Clipboard API 失败，尝试 fallback 方法
+          fallbackCopyTextToClipboard(configText, btn)
+        })
+      } else {
+        // 使用 fallback 方法
+        fallbackCopyTextToClipboard(configText, btn)
+      }
+    }
+    
+    // Fallback 复制方法（用于复制配置）
+    const fallbackCopyTextToClipboard = (text, btn) => {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      try {
+        const successful = document.execCommand('copy')
+        if (successful) {
+          if (btn) {
+            btn.textContent = t('copied')
+            btn.style.background = '#28a745'
+            btn.style.color = 'white'
+            setTimeout(() => {
+              btn.textContent = buttonOriginalTexts.value.copyBtn
+              btn.style.background = ''
+              btn.style.color = ''
+            }, 2000)
+          } else {
+            alert(t('copied'))
+          }
         } else {
-          alert(t('copied'))
+          throw new Error('execCommand failed')
         }
-      }).catch(err => {
+      } catch (err) {
         console.error('复制失败:', err)
         if (btn) {
           btn.style.background = '#dc3545'
@@ -429,7 +471,9 @@ export default {
           }, 2000)
         }
         alert(t('copyFailed'))
-      })
+      } finally {
+        document.body.removeChild(textArea)
+      }
     }
 
     // 生成 ALTER SYSTEM SQL 文本
@@ -500,25 +544,71 @@ export default {
         return
       }
       
-      navigator.clipboard.writeText(sqlModal.sqlText).then(() => {
-        const btn = document.querySelector('.btn-copy-sql')
-        if (btn) {
-          const originalText = btn.textContent
-          btn.textContent = t('copied')
-          btn.style.background = '#28a745'
-          btn.style.color = 'white'
-          setTimeout(() => {
-            btn.textContent = originalText
-            btn.style.background = ''
-            btn.style.color = ''
-          }, 2000)
+      // 检查是否支持 Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(sqlModal.sqlText).then(() => {
+          const btn = document.querySelector('.btn-copy-sql')
+          if (btn) {
+            const originalText = btn.textContent
+            btn.textContent = t('copied')
+            btn.style.background = '#28a745'
+            btn.style.color = 'white'
+            setTimeout(() => {
+              btn.textContent = originalText
+              btn.style.background = ''
+              btn.style.color = ''
+            }, 2000)
+          } else {
+            alert(t('sqlCopied'))
+          }
+        }).catch(err => {
+          console.error('复制失败:', err)
+          // 如果 Clipboard API 失败，尝试 fallback 方法
+          fallbackCopyText(sqlModal.sqlText)
+        })
+      } else {
+        // 使用 fallback 方法
+        fallbackCopyText(sqlModal.sqlText)
+      }
+    }
+    
+    // Fallback 复制方法
+    const fallbackCopyText = (text) => {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      try {
+        const successful = document.execCommand('copy')
+        if (successful) {
+          const btn = document.querySelector('.btn-copy-sql')
+          if (btn) {
+            const originalText = btn.textContent
+            btn.textContent = t('copied')
+            btn.style.background = '#28a745'
+            btn.style.color = 'white'
+            setTimeout(() => {
+              btn.textContent = originalText
+              btn.style.background = ''
+              btn.style.color = ''
+            }, 2000)
+          } else {
+            alert(t('sqlCopied'))
+          }
         } else {
-          alert(t('sqlCopied'))
+          throw new Error('execCommand failed')
         }
-      }).catch(err => {
+      } catch (err) {
         console.error('复制失败:', err)
         alert(t('copyFailed'))
-      })
+      } finally {
+        document.body.removeChild(textArea)
+      }
     }
 
     // 监听语言变化，更新按钮文本
