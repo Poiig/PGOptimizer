@@ -158,20 +158,14 @@ export function calculateParams(config) {
 
 	addParam('checkpoint_completion_target', '0.9', performanceCategory)
 
-	// wal_buffers = LEAST(GREATEST(DBInstanceClassMemory/2097152, 2048), 16384) (结果单位是8kB，需要转换为字节)
-	// 32GB * 1024^3 / 2097152 = 16384 8kB
-	// 转换为字节: 16384 * 8 * 1024 = 134217728 字节
-	const walBuffers8kB = Math.min(Math.max(Math.floor(DBInstanceClassMemory / 2097152), 2048), 16384)
-	const walBuffersBytes = walBuffers8kB * 8 * 1024
+	// wal_buffers = min(2047MB, shared_buffers/32)
+	// 例如：shared_buffers是16GB，则 wal_buffers = min(2047MB, 16GB/32) = min(2047MB, 512MB) = 512MB
+	const walBuffersFromShared = sharedBuffersBytes / 32
+	const maxWalBuffersBytes = 2047 * 1024 * 1024 // 2047MB in bytes
+	const walBuffersBytes = Math.min(walBuffersFromShared, maxWalBuffersBytes)
 	addParam('wal_buffers', formatMemorySize(walBuffersBytes), performanceCategory)
 
-	addParam('wal_keep_size', '2048MB', performanceCategory)
-	// wal_writer_flush_after 单位是8kB，转换为MB
-	// 128 * 8KB = 1024 KB = 1 MB
-	const walWriterFlushAfter8kB = 128
-	const walWriterFlushAfterBytes = walWriterFlushAfter8kB * 8 * 1024
-	addParam('wal_writer_flush_after', formatMemorySize(walWriterFlushAfterBytes), performanceCategory)
-	addParam('checkpoint_timeout', '6min', performanceCategory)
+	addParam('checkpoint_timeout', '15min', performanceCategory)
 	addParam('default_statistics_target', '100', performanceCategory)
 
 	// random_page_cost 和 effective_io_concurrency 根据存储类型
@@ -225,14 +219,12 @@ export function calculateParams(config) {
 
 	// Background writer 相关参数
 	addParam('bgwriter_lru_maxpages', '1000', performanceCategory)
-	addParam('bgwriter_lru_multiplier', '10', performanceCategory)
+	addParam('bgwriter_lru_multiplier', '2', performanceCategory)
 
 	// 其他优化参数
 	addParam('enable_partitionwise_aggregate', 'on', performanceCategory)
 	addParam('enable_partitionwise_join', 'on', performanceCategory)
 	addParam('extra_float_digits', '3', performanceCategory)
-	addParam('max_wal_senders', '16', performanceCategory)
-	addParam('superuser_reserved_connections', '20', performanceCategory)
 
 	// temp_file_limit = DBInstanceClassMemory/1024 (结果单位就是KB)
 	// 32GB * 1024^3 / 1024 = 33554432 kB
@@ -240,8 +232,6 @@ export function calculateParams(config) {
 	addParam('temp_file_limit', formatMemorySizeFromKB(tempFileLimitKB), performanceCategory)
 
 	addParam('track_io_timing', 'on', performanceCategory)
-	addParam('max_replication_slots', '16', performanceCategory)
-	addParam('max_stack_depth', '2048', performanceCategory)
 
 	// ====================== 超时相关 ======================
 	const timeoutCategory = '超时相关'
@@ -273,9 +263,6 @@ export function calculateParams(config) {
 
 	// ====================== 其他参数 ======================
 	const otherCategory = '其他参数'
-	addParam('track_functions', 'pl', otherCategory)
-	addParam('TimeZone', 'Asia/Shanghai', otherCategory)
-
 
 	return params
 }

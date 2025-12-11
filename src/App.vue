@@ -143,7 +143,7 @@
                     </span>
                   </td>
                   <td class="param-description">
-                    {{ getParamDescription(param.name) }}
+                    {{ getParamDescription(param.name) || '该参数的详细说明请参考 PostgreSQL 官方文档' }}
                   </td>
                 </tr>
               </template>
@@ -273,6 +273,11 @@ export default {
     }
 
     const copyToClipboard = (event) => {
+      if (!generatedParams.value || generatedParams.value.length === 0) {
+        alert('没有可复制的配置参数，请先生成配置')
+        return
+      }
+      
       const configText = generatedParams.value
         .map(param => `${param.name} = ${param.value}`)
         .join('\n')
@@ -298,6 +303,11 @@ export default {
     }
 
     const copyAlterSystemSQL = (event) => {
+      if (!generatedParams.value || generatedParams.value.length === 0) {
+        alert('没有可复制的配置参数，请先生成配置')
+        return
+      }
+      
       // 生成 ALTER SYSTEM SET 的 SQL 语句
       // 对于字符串值需要加引号，对于数字和布尔值不需要
       const escapeValue = (value) => {
@@ -361,6 +371,11 @@ export default {
     }
 
     const downloadConfig = () => {
+      if (!generatedParams.value || generatedParams.value.length === 0) {
+        alert('没有可下载的配置参数，请先生成配置')
+        return
+      }
+      
       const configText = generatedParams.value
         .map(param => `${param.name} = ${param.value}`)
         .join('\n')
