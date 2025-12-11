@@ -37,26 +37,58 @@
 
 ## 🚀 一键部署
 
-### Cloudflare Pages
+### Cloudflare
 
-[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://dash.cloudflare.com/?to=/:account/pages/new)
+> **注意**: Cloudflare 现已统一 Pages 和 Workers 平台，可以通过统一的界面部署静态网站和边缘应用。
 
-**使用 Cloudflare Pages 部署：**
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://dash.cloudflare.com/?to=/:account/pages/new)
 
-1. 点击上方的 "Deploy to Cloudflare Pages" 按钮
+**使用 Cloudflare 部署：**
+
+1. 点击上方的 "Deploy to Cloudflare" 按钮
 2. 连接你的 GitHub 仓库
 3. 配置构建设置：
+   - **框架预设**: `Vite` (或选择 `None` 手动配置)
    - **构建命令**: `npm run build`
    - **构建输出目录**: `dist`
-   - **Node.js 版本**: `18` 或更高
+   - **根目录**: `/` (留空)
+   - **Node.js 版本**: `18` (项目包含 `.nvmrc` 文件)
+   - **环境变量**: 无需设置
 4. 点击 "保存并部署"
 
-或者使用 Wrangler CLI：
+**如果构建失败，请检查：**
+- ✅ 确保 Node.js 版本为 18（项目包含 `.nvmrc` 文件指定版本）
+- ✅ 检查构建日志中的完整错误信息
+- ✅ 确保所有依赖都已正确安装
+- ✅ 尝试在本地运行 `npm run build` 验证构建是否正常
+- ✅ 如果构建超时，可以尝试增加构建超时时间（在 Cloudflare 设置中）
+- ✅ 确保 `public/_redirects` 文件存在（用于 SPA 路由）
+
+**使用 Wrangler CLI 部署：**
 
 ```bash
+# 安装 Wrangler
 npm install -g wrangler
+
+# 登录 Cloudflare
+wrangler login
+
+# 构建项目
+npm run build
+
+# 部署到 Cloudflare
 wrangler pages deploy dist
+
+# 或者使用项目中的脚本
+npm run deploy
 ```
+
+**当前部署配置：**
+- ✅ `vite.config.js` - Vite 构建配置，输出到 `dist` 目录
+- ✅ `public/_redirects` - SPA 路由重定向配置
+- ✅ `.nvmrc` - Node.js 版本指定（18）
+- ✅ `wrangler.toml` - Wrangler CLI 配置文件
+- ✅ `.wranglerignore` - 排除不需要部署的文件
 
 ## 📦 安装和运行
 
