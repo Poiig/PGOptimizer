@@ -16,8 +16,6 @@
 ![功能演示](screenshots/features.png)
 *支持一键复制配置、生成并预览 ALTER SYSTEM SQL 等功能*
 
-> **注意**: 如果 `screenshots` 目录不存在，请创建该目录并添加相应的截图文件。
-
 ## ✨ 功能特性
 
 - 🎯 **智能参数计算**: 根据服务器配置自动计算优化的 PostgreSQL 参数
@@ -72,6 +70,21 @@
 - ✅ 需要自定义域名时，记得在 Pages 完成域名绑定和 DNS 生效
 
 ![Cloudflare Pages](screenshots/DeployCloudflare.png)
+
+### 使用 Docker 部署
+
+```bash
+# 构建镜像
+docker build -t pg-optimizer .
+
+# 运行容器（默认 80 端口）
+docker run -d --name pg-optimizer -p 8080:80 pg-optimizer
+```
+
+说明：
+- 基于 `nginx:alpine` 托管构建产物，默认监听 80 端口。
+- 已包含 `try_files` 回退到 `index.html`，支持前端路由刷新不 404。
+- 如需自定义缓存/HTTPS，请替换 `docker/nginx.conf` 后重新构建。
 
 ## 📦 本地安装和运行
 
