@@ -92,13 +92,13 @@ npm run deploy
 - ✅ `vite.config.js` - Vite 构建配置，输出到 `dist` 目录
 - ✅ `public/_redirects` - SPA 路由重定向配置
 - ✅ `.nvmrc` - Node.js 版本指定（20，Wrangler 要求 v20.0.0+）
+- ✅ `wrangler.toml` - Wrangler 配置文件（仅包含项目名称，用于 Pages 部署）
 - ✅ `.wranglerignore` - 排除不需要部署的文件
 
 **重要提示：**
-- 项目**没有** `wrangler.toml` 文件，这样 Cloudflare 会自动识别为 Pages 项目
-- 如果通过 Cloudflare 控制台部署，**不需要** `wrangler.toml` 文件
-- 如果遇到 "Workers-specific command" 错误，请删除 Cloudflare 控制台中的"部署命令"设置，只保留"构建命令"
-- 使用 Wrangler CLI 命令行部署时，直接使用 `wrangler pages deploy dist` 即可
+- `wrangler.toml` 文件仅包含项目名称，不会影响 Cloudflare 的项目类型识别
+- 如果通过 Cloudflare 控制台部署，确保使用 `npm run pages:deploy` 作为部署命令
+- 如果遇到 "Workers-specific command" 错误，请确保使用 `npm run pages:deploy` 而不是 `npx wrangler deploy`
 
 ## 📦 安装和运行
 
