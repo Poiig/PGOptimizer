@@ -7,7 +7,8 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
-		"deploy": "npm run build && wrangler pages deploy dist"
+		"deploy": "npm run build && wrangler pages deploy dist",
+		"pages:deploy": "wrangler pages deploy dist"
 	},
 	"dependencies": {
 		"vue": "^3.4.21"
