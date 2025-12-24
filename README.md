@@ -164,11 +164,9 @@ shared_buffers = DBInstanceClassMemory / 4
 
 #### 3. effective_cache_size（有效缓存大小）
 ```
-effective_cache_size = DBInstanceClassMemory / 16384
-结果单位: 8kB
-转换为字节: 结果 × 8 × 1024
+effective_cache_size = DBInstanceClassMemory × 3 / 4
 ```
-**说明**: 用于查询规划器估算可用缓存，影响查询计划选择。例如 32GB 内存计算结果为 16GB。
+**说明**: 设置为总内存的 3/4，用于查询规划器估算可用缓存，影响查询计划选择。例如 32GB 内存计算结果为 24GB。
 
 #### 4. work_mem（工作内存）
 ```

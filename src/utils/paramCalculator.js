@@ -143,11 +143,8 @@ export function calculateParams(config) {
 	const sharedBuffersBytes = DBInstanceClassMemory / 4
 	addParam('shared_buffers', formatMemorySize(sharedBuffersBytes), performanceCategory)
 
-	// effective_cache_size = DBInstanceClassMemory/16384 (结果单位是8kB，需要转换为字节)
-	// 32GB * 1024^3 / 16384 = 2097152 8kB
-	// 转换为字节: 2097152 * 8 * 1024 = 17179869184 字节
-	const effectiveCacheSize8kB = Math.floor(DBInstanceClassMemory / 16384)
-	const effectiveCacheSizeBytes = effectiveCacheSize8kB * 8 * 1024
+	// effective_cache_size = 总内存的 3/4
+	const effectiveCacheSizeBytes = DBInstanceClassMemory * 3 / 4
 	addParam('effective_cache_size', formatMemorySize(effectiveCacheSizeBytes), performanceCategory)
 
 	// maintenance_work_mem = LEAST(DBInstanceClassMemory/65536, 4194304)
